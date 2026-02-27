@@ -14,7 +14,6 @@ function removeProp(dom, name) {
 }
 
 function setProp(dom, name, value) {
-  console.log(dom);
   if (name === "className") {
     dom.setAttribute("class", value);
     return;
@@ -27,10 +26,14 @@ function eventName(name) {
 }
 
 function createDom(vnode) {
+  console.log("createDom", vnode);
+
   const dom =
     vnode.type === TEXT_ELEMENT
       ? document.createTextNode(vnode.props?.nodeValue ?? "")
       : document.createElement(vnode.type);
+
+  vnode.dom = dom;
 
   updateDom(dom, {}, vnode.props ?? {});
 
@@ -88,7 +91,51 @@ function updateDom(dom, prevProps, nextProps) {
   }
 }
 
+function reconcileRender(parentDom, oldVNode, newVNode) {
+  // new node
+  if (oldVNode == null) {
+    const dom = createDom(newVNode);
+    parentDom.appendChild(dom);
+    return newVNode;
+  }
+
+  // remove node
+  if (newVNode == null) {
+    parentDom.removeChild(oldVNode.dom);
+    return null;
+  }
+
+  // replace node
+  if (oldVNode.type !== newVNode.type) {
+    const dom = createDom(newVNode);
+    parentDom.replaceChild(dom, oldVNode.dom);
+    return newVNode;
+  }
+
+  // pass dom to newVNode
+  newVNode.dom = oldVNode.dom;
+
+  // update simple vnode and text node
+  updateDom(newVNode.dom, oldVNode.props ?? {}, newVNode.props ?? {});
+
+  // reconcile children
+  const oldChildren = oldVNode.children ?? [];
+  const newChildren = newVNode.children ?? [];
+
+  const max = Math.max(oldChildren.length, newChildren.length);
+  const reconciledChildren = [];
+
+  for (let i = 0; i < max; i++) {
+    const child = reconcileRender(newVNode.dom, oldChildren[i], newChildren[i]);
+    if (child != null) reconciledChildren.push(child);
+  }
+
+  newVNode.children = reconciledChildren;
+  return newVNode;
+}
+
 export function render(vnode, container) {
-  container.textContent = "";
-  container.appendChild(createDom(vnode));
+  const prevRoot = container.__rootVNode ?? null;
+  const nextRoot = reconcileRender(container, prevRoot, vnode);
+  container.__rootVNode = nextRoot;
 }
