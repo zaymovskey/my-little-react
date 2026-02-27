@@ -4,7 +4,7 @@ import { useState } from "./core/hooks.js";
 
 const root = document.getElementById("root");
 
-function view() {
+function App() {
   const [a, setA] = useState(0);
   const [b, setB] = useState(10);
 
@@ -17,4 +17,4 @@ function view() {
   );
 }
 
-render(view, root);
+render(() => createElement(App, null), root);

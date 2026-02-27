@@ -2,6 +2,10 @@ import { TEXT_ELEMENT } from "./createElement.js";
 import { setRerender } from "./hooks.js";
 import { resetHooksCursor } from "./hooks.js";
 
+function isFunctionType(type) {
+  return typeof type === "function";
+}
+
 function isEventProp(name) {
   return name.startsWith("on");
 }
@@ -94,6 +98,19 @@ function updateDom(dom, prevProps, nextProps) {
 }
 
 function reconcileRender(parentDom, oldVNode, newVNode) {
+  // Function component
+  if (newVNode != null && isFunctionType(newVNode.type)) {
+    const rendered = newVNode.type(newVNode.props ?? {});
+    const oldChild = oldVNode?.child ?? null;
+
+    const child = reconcileRender(parentDom, oldChild, rendered);
+
+    newVNode.child = child;
+    newVNode.dom = child?.dom ?? null;
+
+    return newVNode;
+  }
+
   // new node
   if (oldVNode == null) {
     const dom = createDom(newVNode);
