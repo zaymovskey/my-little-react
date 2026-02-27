@@ -1,5 +1,6 @@
 import { TEXT_ELEMENT } from "./createElement.js";
 import { setRerender } from "./hooks.js";
+import { resetHooksCursor } from "./hooks.js";
 
 function isEventProp(name) {
   return name.startsWith("on");
@@ -146,6 +147,7 @@ export function render(renderFn, container) {
     render(lastRenderFn, lastContainer);
   });
 
+  resetHooksCursor();
   const vnode = renderFn();
 
   const prevRoot = container.__rootVNode ?? null;
