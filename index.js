@@ -1,21 +1,19 @@
-import { createElement, render } from "./core/index.js";
+import { createElement } from "./core/createElement.js";
+import { render } from "./core/render.js";
+import { useState } from "./core/hooks.js";
 
 const root = document.getElementById("root");
 
-const app = createElement(
-  "div",
-  { id: "app", className: "box" },
-  createElement("h1", null, "Hello"),
-  createElement("button", { onClick: () => alert("click") }, "Click"),
-);
+function view() {
+  const [n, setN] = useState(0);
 
-const newApp = createElement(
-  "div",
-  { id: "app", className: "box" },
-  createElement("h1", null, "Hello2"),
-  createElement("button", { onClick: () => alert("click") }, "Click"),
-);
+  return createElement(
+    "div",
+    null,
+    createElement("h1", null, "Count: ", String(n)),
+    createElement("button", { onClick: () => setN((x) => x + 1) }, "+"),
+    createElement("button", { onClick: () => setN((x) => x - 1) }, "-"),
+  );
+}
 
-render(app, root);
-
-render(newApp, root);
+render(view, root);

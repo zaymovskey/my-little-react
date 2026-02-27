@@ -1,4 +1,5 @@
 import { TEXT_ELEMENT } from "./createElement.js";
+import { setRerender } from "./hooks.js";
 
 function isEventProp(name) {
   return name.startsWith("on");
@@ -134,7 +135,19 @@ function reconcileRender(parentDom, oldVNode, newVNode) {
   return newVNode;
 }
 
-export function render(vnode, container) {
+let lastRenderFn = null;
+let lastContainer = null;
+
+export function render(renderFn, container) {
+  lastRenderFn = renderFn;
+  lastContainer = container;
+
+  setRerender(() => {
+    render(lastRenderFn, lastContainer);
+  });
+
+  const vnode = renderFn();
+
   const prevRoot = container.__rootVNode ?? null;
   const nextRoot = reconcileRender(container, prevRoot, vnode);
   container.__rootVNode = nextRoot;
