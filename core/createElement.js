@@ -1,4 +1,4 @@
-const TEXT_ELEMENT = "TEXT";
+export const TEXT_ELEMENT = "TEXT";
 
 function createTextElement(value) {
   return {
@@ -42,7 +42,7 @@ function normalizeChildren(children) {
   return normalized;
 }
 
-function createElement(type, props, ...children) {
+export function createElement(type, props, ...children) {
   return {
     type,
     props: props ?? {},
