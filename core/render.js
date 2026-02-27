@@ -1,6 +1,5 @@
 import { TEXT_ELEMENT } from "./createElement.js";
-import { setRerender } from "./hooks.js";
-import { resetHooksCursor } from "./hooks.js";
+import { setCurrentOwner } from "./hooks.js";
 
 function isFunctionType(type) {
   return typeof type === "function";
@@ -32,21 +31,13 @@ function eventName(name) {
 }
 
 function createDom(vnode) {
-  console.log("createDom", vnode);
-
   const dom =
     vnode.type === TEXT_ELEMENT
       ? document.createTextNode(vnode.props?.nodeValue ?? "")
       : document.createElement(vnode.type);
 
   vnode.dom = dom;
-
   updateDom(dom, {}, vnode.props ?? {});
-
-  for (const child of vnode.children ?? []) {
-    dom.appendChild(createDom(child));
-  }
-
   return dom;
 }
 
@@ -100,14 +91,19 @@ function updateDom(dom, prevProps, nextProps) {
 function reconcileRender(parentDom, oldVNode, newVNode) {
   // Function component
   if (newVNode != null && isFunctionType(newVNode.type)) {
-    const rendered = newVNode.type(newVNode.props ?? {});
-    const oldChild = oldVNode?.child ?? null;
+    if (oldVNode && oldVNode.type === newVNode.type) {
+      newVNode.hooks = oldVNode.hooks;
+    }
 
-    const child = reconcileRender(parentDom, oldChild, rendered);
+    newVNode.__rerender = rerenderRoot;
+
+    setCurrentOwner(newVNode);
+
+    const rendered = newVNode.type(newVNode.props ?? {});
+    const child = reconcileRender(parentDom, oldVNode?.child ?? null, rendered);
 
     newVNode.child = child;
     newVNode.dom = child?.dom ?? null;
-
     return newVNode;
   }
 
@@ -115,6 +111,16 @@ function reconcileRender(parentDom, oldVNode, newVNode) {
   if (oldVNode == null) {
     const dom = createDom(newVNode);
     parentDom.appendChild(dom);
+
+    const children = newVNode.children ?? [];
+    const mounted = [];
+
+    for (let i = 0; i < children.length; i++) {
+      const child = reconcileRender(dom, null, children[i]);
+      if (child != null) mounted.push(child);
+    }
+
+    newVNode.children = mounted;
     return newVNode;
   }
 
@@ -153,21 +159,18 @@ function reconcileRender(parentDom, oldVNode, newVNode) {
   return newVNode;
 }
 
-let lastRenderFn = null;
-let lastContainer = null;
+let rootContainer = null;
+let rootRenderFn = null;
+
+function rerenderRoot() {
+  const vnode = rootRenderFn();
+  const prevRoot = rootContainer.__rootVNode ?? null;
+  const nextRoot = reconcileRender(rootContainer, prevRoot, vnode);
+  rootContainer.__rootVNode = nextRoot;
+}
 
 export function render(renderFn, container) {
-  lastRenderFn = renderFn;
-  lastContainer = container;
-
-  setRerender(() => {
-    render(lastRenderFn, lastContainer);
-  });
-
-  resetHooksCursor();
-  const vnode = renderFn();
-
-  const prevRoot = container.__rootVNode ?? null;
-  const nextRoot = reconcileRender(container, prevRoot, vnode);
-  container.__rootVNode = nextRoot;
+  rootContainer = container;
+  rootRenderFn = renderFn;
+  rerenderRoot();
 }

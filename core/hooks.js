@@ -1,29 +1,23 @@
-let hooks = [];
-let currentHookIndex = 0;
+let currentOwner = null;
 
-let rerender = null;
-
-export function setRerender(fn) {
-  rerender = fn;
-}
-
-export function resetHooksCursor() {
-  currentHookIndex = 0;
+export function setCurrentOwner(vnode) {
+  currentOwner = vnode;
+  if (!currentOwner.hooks) currentOwner.hooks = [];
+  currentOwner.hookIndex = 0;
 }
 
 export function useState(initial) {
-  const i = currentHookIndex;
+  const owner = currentOwner;
+  const i = owner.hookIndex;
 
-  if (hooks[i] === undefined) {
-    hooks[i] = initial;
-  }
+  if (owner.hooks[i] === undefined) owner.hooks[i] = initial;
 
-  function setState(next) {
-    const prev = hooks[i];
-    hooks[i] = typeof next === "function" ? next(prev) : next;
-    rerender?.();
-  }
+  const setState = (next) => {
+    const prev = owner.hooks[i];
+    owner.hooks[i] = typeof next === "function" ? next(prev) : next;
+    owner.__rerender?.();
+  };
 
-  currentHookIndex++;
-  return [hooks[i], setState];
+  owner.hookIndex++;
+  return [owner.hooks[i], setState];
 }

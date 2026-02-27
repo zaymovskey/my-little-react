@@ -4,16 +4,35 @@ import { useState } from "./core/hooks.js";
 
 const root = document.getElementById("root");
 
-function App() {
+function CounterA() {
   const [a, setA] = useState(0);
-  const [b, setB] = useState(10);
 
+  return createElement(
+    "button",
+    { onClick: () => setA((v) => v + 1) },
+    "A: ",
+    String(a),
+  );
+}
+
+function CounterB() {
+  const [b, setB] = useState(100);
+
+  return createElement(
+    "button",
+    { onClick: () => setB((v) => v + 1) },
+    "B: ",
+    String(b),
+  );
+}
+
+function App() {
   return createElement(
     "div",
     null,
-    createElement("h1", null, "a=", String(a), " b=", String(b)),
-    createElement("button", { onClick: () => setA((x) => x + 1) }, "A+"),
-    createElement("button", { onClick: () => setB((x) => x + 1) }, "B+"),
+    createElement(CounterA, null),
+    createElement("br", null),
+    createElement(CounterB, null),
   );
 }
 
