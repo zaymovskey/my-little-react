@@ -42,6 +42,7 @@ function createDom(vnode) {
 }
 
 function updateDom(dom, prevProps, nextProps) {
+  // Text node
   if (dom.nodeType === 3) {
     const nextText = nextProps?.nodeValue ?? "";
     if (dom.nodeValue !== String(nextText)) {
@@ -50,6 +51,7 @@ function updateDom(dom, prevProps, nextProps) {
     return;
   }
 
+  // Remove old or changed event listeners
   for (const name in prevProps) {
     if (!isEventProp(name)) continue;
     const prevHandler = prevProps[name];
@@ -59,6 +61,7 @@ function updateDom(dom, prevProps, nextProps) {
     }
   }
 
+  // Remove old properties
   for (const name in prevProps) {
     if (!isPropertyProp(name)) continue;
     if (!(name in nextProps)) {
@@ -66,6 +69,7 @@ function updateDom(dom, prevProps, nextProps) {
     }
   }
 
+  // Set new or changed properties
   for (const name in nextProps) {
     if (!isPropertyProp(name)) continue;
     if (prevProps[name] !== nextProps[name]) {
@@ -73,7 +77,8 @@ function updateDom(dom, prevProps, nextProps) {
     }
   }
 
-  for (const name in prevProps) {
+  // Add event listeners
+  for (const name in nextProps) {
     if (!isEventProp(name)) continue;
     const prevHandler = prevProps[name];
     const nextHandler = nextProps[name];
