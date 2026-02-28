@@ -24,7 +24,5 @@ const B = createFunctionalComponentVNode(() => {
 });
 
 export const App = createFunctionalComponentVNode(() => {
-  const [showA, setShowA] = useState(true);
-
   return createHtmlVNode("main", {}, [A, B]);
 });
