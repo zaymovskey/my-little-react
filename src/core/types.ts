@@ -2,7 +2,7 @@ export type TagName = keyof HTMLElementTagNameMap;
 
 export type HTMLElementProps = Record<string, unknown>;
 
-export type Kind = "TEXT" | "HTML";
+export type Kind = "TEXT" | "HTML" | "FUNCTIONAL_COMPONENT";
 
 export type TextProps = {
   nodeValue: string;
@@ -10,21 +10,28 @@ export type TextProps = {
 
 export type ElementProps = Record<string, unknown>;
 
-export type TextVNode = {
+export interface TextVNode {
   kind: "TEXT";
   props: TextProps;
   dom: Text | null;
-};
+}
 
-export type HTMLElementVNode<tagName extends TagName = TagName> = {
+export interface HTMLElementVNode<tagName extends TagName = TagName> {
   kind: "HTML";
   tagName: tagName;
   props: ElementProps;
   children: VNode[];
   dom: HTMLElement | null;
-};
+}
 
-export type VNode = TextVNode | HTMLElementVNode;
+export interface FunctinalComponentVNode {
+  kind: "FUNCTIONAL_COMPONENT";
+  component: (props: ElementProps) => VNode;
+  props: ElementProps;
+  dom: Node | null;
+}
+
+export type VNode = TextVNode | HTMLElementVNode | FunctinalComponentVNode;
 
 export function isTextVNode(vnode?: VNode): vnode is TextVNode {
   return vnode?.kind === "TEXT";
@@ -32,4 +39,10 @@ export function isTextVNode(vnode?: VNode): vnode is TextVNode {
 
 export function isHTMLElementVNode(vnode?: VNode): vnode is HTMLElementVNode {
   return vnode?.kind === "HTML";
+}
+
+export function isFunctionalComponentVNode(
+  vnode?: VNode,
+): vnode is FunctinalComponentVNode {
+  return vnode?.kind === "FUNCTIONAL_COMPONENT";
 }

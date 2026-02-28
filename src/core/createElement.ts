@@ -1,5 +1,6 @@
 import type {
   ElementProps,
+  FunctinalComponentVNode,
   HTMLElementVNode,
   TagName,
   TextVNode,
@@ -16,4 +17,11 @@ export function createHtmlVNode<tagName extends TagName>(
   children: VNode[],
 ): HTMLElementVNode<tagName> {
   return { kind: "HTML", tagName, props, children, dom: null };
+}
+
+export function createFunctionalComponentVNode(
+  component: (props: ElementProps) => VNode,
+  props: ElementProps = {},
+): FunctinalComponentVNode {
+  return { kind: "FUNCTIONAL_COMPONENT", component, props, dom: null };
 }

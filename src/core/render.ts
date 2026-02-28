@@ -1,6 +1,7 @@
 import {
   isTextVNode,
   isHTMLElementVNode,
+  isFunctionalComponentVNode,
   type VNode,
   type ElementProps,
 } from "./types";
@@ -12,6 +13,13 @@ function isEventProp(propName: string): boolean {
 function convertVNodetoDOM(vnode: VNode): Node {
   if (isTextVNode(vnode)) {
     const dom = document.createTextNode(vnode.props.nodeValue);
+    vnode.dom = dom;
+    return dom;
+  }
+
+  if (isFunctionalComponentVNode(vnode)) {
+    const childVNode = vnode.component(vnode.props);
+    const dom = convertVNodetoDOM(childVNode);
     vnode.dom = dom;
     return dom;
   }
