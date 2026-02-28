@@ -150,12 +150,8 @@ function updateDomByProps(
 
   // Update or set new props
   Object.entries(nextProps).forEach(([key, value]) => {
-    // Events
+    // Events (Ничего не делаем, оставляем те обработчики, добавленные в convertVNodetoDOM)
     if (isEventProp(key)) {
-      dom.addEventListener(
-        key.substring(2).toLowerCase(),
-        value as EventListener,
-      );
       return;
     }
 
