@@ -1,10 +1,13 @@
-const app = document.getElementById("root");
+import { createHtmlVNode, createTextVNode } from "./core/createElement";
+import { render } from "./core/render";
 
-if (!app) {
-  throw new Error("#root not found in index.html");
-}
+const root = document.getElementById("root")!;
 
-app.innerHTML = `
-  <h1>Hello, My Little React!</h1>
-  <p>This is a simple implementation of React.</p>
-`;
+const VDOM = createHtmlVNode("main", {}, [
+  createHtmlVNode("h1", {}, [createTextVNode("Hello, world!")]),
+  createHtmlVNode("p", {}, [
+    createTextVNode("This is a simple React-like library."),
+  ]),
+]);
+
+render(VDOM, root);
