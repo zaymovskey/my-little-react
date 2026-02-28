@@ -20,8 +20,18 @@ export function createHtmlVNode<tagName extends TagName>(
 }
 
 export function createFunctionalComponentVNode(
-  component: (props: ElementProps) => VNode,
-  props: ElementProps = {},
+  component: FunctinalComponentVNode["component"],
+  props: FunctinalComponentVNode["props"] = {},
 ): FunctinalComponentVNode {
-  return { kind: "FUNCTIONAL_COMPONENT", component, props, dom: null };
+  return {
+    kind: "FUNCTIONAL_COMPONENT",
+    component,
+    props,
+
+    dom: null,
+    child: null,
+
+    hookIndex: 0,
+    stateStorage: [],
+  };
 }

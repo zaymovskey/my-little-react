@@ -24,12 +24,15 @@ export interface HTMLElementVNode<tagName extends TagName = TagName> {
   dom: HTMLElement | null;
 }
 
-export interface FunctinalComponentVNode {
+export type FunctinalComponentVNode = {
   kind: "FUNCTIONAL_COMPONENT";
-  component: (props: ElementProps) => VNode;
-  props: ElementProps;
+  props: Record<string, unknown>;
+  component: (props: Record<string, unknown>) => VNode;
   dom: Node | null;
-}
+  componentResult: VNode | null;
+  hookIndex: number;
+  stateStorage: unknown[];
+};
 
 export type VNode = TextVNode | HTMLElementVNode | FunctinalComponentVNode;
 
