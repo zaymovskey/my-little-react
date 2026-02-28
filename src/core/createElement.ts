@@ -27,10 +27,8 @@ export function createFunctionalComponentVNode(
     kind: "FUNCTIONAL_COMPONENT",
     component,
     props,
-
     dom: null,
-    child: null,
-
+    componentResult: null,
     hookIndex: 0,
     stateStorage: [],
   };
