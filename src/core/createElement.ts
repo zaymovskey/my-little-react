@@ -7,13 +7,13 @@ import type {
 } from "./types";
 
 export function createTextVNode(nodeValue: string): TextVNode {
-  return { kind: "TEXT", props: { nodeValue } };
+  return { kind: "TEXT", props: { nodeValue }, dom: null };
 }
 
-export function createHtmlVNode<K extends TagName>(
-  tagName: K,
+export function createHtmlVNode<tagName extends TagName>(
+  tagName: tagName,
   props: ElementProps = {},
   children: VNode[],
-): HTMLElementVNode<K> {
-  return { kind: "HTML", tagName, props, children };
+): HTMLElementVNode<tagName> {
+  return { kind: "HTML", tagName, props, children, dom: null };
 }
