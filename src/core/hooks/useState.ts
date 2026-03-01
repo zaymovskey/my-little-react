@@ -1,15 +1,5 @@
 import { rerender } from "../render";
-import type { FunctinalComponentVNode } from "../types";
-
-let currentOwner: FunctinalComponentVNode | null = null;
-
-export function setCurrentStateOwner(owner: FunctinalComponentVNode | null) {
-  currentOwner = owner;
-}
-
-export function resetOwnerHookIndex(owner: FunctinalComponentVNode) {
-  owner.hookIndex = 0;
-}
+import { currentOwner } from "./hooksOwner";
 
 type SetState<T> = (next: T | ((prev: T) => T)) => void;
 

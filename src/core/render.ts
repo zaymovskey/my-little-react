@@ -1,4 +1,4 @@
-import { setCurrentStateOwner, resetOwnerHookIndex } from "./hooks/useState";
+import { setCurrentOwner, resetOwnerHookIndex } from "./hooks";
 import {
   isTextVNode,
   isHTMLElementVNode,
@@ -20,14 +20,14 @@ const eventNameToEventListenerName = (eventName: string) =>
 
 function runComponent(vnode: FunctinalComponentVNode): VNode {
   // owner = этот компонент
-  setCurrentStateOwner(vnode);
+  setCurrentOwner(vnode);
   resetOwnerHookIndex(vnode);
 
   const componentResult = vnode.component(vnode.props);
   vnode.componentResult = componentResult;
 
   // можно сбросить owner, чтобы useState вне рендера падал
-  setCurrentStateOwner(null);
+  setCurrentOwner(null);
 
   return componentResult;
 }
