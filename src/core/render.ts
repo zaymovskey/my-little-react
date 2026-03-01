@@ -12,6 +12,11 @@ function isEventProp(propName: string): boolean {
   return propName.startsWith("on");
 }
 
+const eventStore = new WeakMap<Element, Map<string, EventListener>>();
+
+const eventNameToEventListenerName = (eventName: string) =>
+  eventName.substring(2).toLowerCase();
+
 function runComponent(vnode: FunctinalComponentVNode): VNode {
   // owner = этот компонент
   setCurrentStateOwner(vnode);
@@ -50,10 +55,10 @@ function convertVNodetoDOM(vnode: VNode): Node {
     Object.entries(vnode.props).forEach(([propKey, propValue]) => {
       // Events
       if (isEventProp(propKey)) {
-        dom.addEventListener(
-          propKey.substring(2).toLowerCase(),
-          propValue as EventListener,
-        );
+        const eventCallback = propValue as EventListener;
+        const eventName = eventNameToEventListenerName(propKey);
+        dom.addEventListener(eventName, eventCallback);
+        eventStore.set(dom, new Map([[eventName, eventCallback]]));
         return;
       }
 
@@ -181,6 +186,15 @@ function updateDom(
   replaceVNode(parentDom, prevVNode, nextVNode);
 }
 
+function getEventMap(dom: Element) {
+  let map = eventStore.get(dom);
+  if (!map) {
+    map = new Map();
+    eventStore.set(dom, map);
+  }
+  return map;
+}
+
 function updateDomByProps(
   dom: Element,
   prevProps: ElementProps,
@@ -188,13 +202,42 @@ function updateDomByProps(
 ) {
   // Remove deleted props
   Object.keys(prevProps).forEach((key) => {
-    if (!(key in nextProps)) dom.removeAttribute(key);
+    if (!(key in nextProps)) {
+      if (isEventProp(key)) {
+        const eventName = eventNameToEventListenerName(key);
+        const map = getEventMap(dom);
+        const eventListener = map.get(eventName);
+        if (eventListener) {
+          dom.removeEventListener(eventName, eventListener);
+          map.delete(eventName);
+        }
+        return;
+      }
+      dom.removeAttribute(key);
+    }
   });
 
   // Update or set new props
   Object.entries(nextProps).forEach(([key, value]) => {
-    // Events — пока тупо игнорим в update (как ты хотел)
-    if (isEventProp(key)) return;
+    if (prevProps[key] === value) {
+      return;
+    }
+
+    if (isEventProp(key)) {
+      const eventName = eventNameToEventListenerName(key);
+      const eventListener = value as EventListener;
+      const prevEventListener = getEventMap(dom).get(eventName);
+
+      if (prevEventListener) {
+        const map = getEventMap(dom);
+        dom.removeEventListener(eventName, prevEventListener);
+        map.delete(eventName);
+      }
+
+      dom.addEventListener(eventName, eventListener);
+      getEventMap(dom).set(eventName, eventListener);
+      return;
+    }
 
     dom.setAttribute(key, String(value));
   });
@@ -216,9 +259,11 @@ export function render(
   const newVDOM = runComponent(rootFC);
 
   if (prevVDom === null) {
+    // initial mount
     const dom = convertVNodetoDOM(newVDOM);
     container.appendChild(dom);
   } else {
+    // update
     updateDom(container, prevVDom, newVDOM);
   }
 
