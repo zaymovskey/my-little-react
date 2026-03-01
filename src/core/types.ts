@@ -49,3 +49,11 @@ export function isFunctionalComponentVNode(
 ): vnode is FunctinalComponentVNode {
   return vnode?.kind === "FUNCTIONAL_COMPONENT";
 }
+
+export type Operation =
+  | { type: "CREATE"; parentDom: Node; vnode: VNode }
+  | { type: "REMOVE"; parentDom: Node; dom: Node }
+  | { type: "REPLACE"; parentDom: Node; oldDom: Node; vnode: VNode }
+  | { type: "SET_TEXT"; dom: Text; value: string }
+  | { type: "SET_PROP"; dom: Element; key: string; value: any }
+  | { type: "REMOVE_PROP"; dom: Element; key: string };

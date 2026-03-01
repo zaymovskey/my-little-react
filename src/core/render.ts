@@ -6,6 +6,7 @@ import {
   type VNode,
   type ElementProps,
   type FunctinalComponentVNode,
+  type Operation,
 } from "./types";
 
 function isEventProp(propName: string): boolean {
@@ -22,13 +23,13 @@ function runComponent(vnode: FunctinalComponentVNode): VNode {
   setCurrentStateOwner(vnode);
   resetOwnerHookIndex(vnode);
 
-  const child = vnode.component(vnode.props);
-  vnode.componentResult = child;
+  const componentResult = vnode.component(vnode.props);
+  vnode.componentResult = componentResult;
 
   // можно сбросить owner, чтобы useState вне рендера падал
   setCurrentStateOwner(null);
 
-  return child;
+  return componentResult;
 }
 
 function convertVNodetoDOM(vnode: VNode): Node {
@@ -57,8 +58,12 @@ function convertVNodetoDOM(vnode: VNode): Node {
       if (isEventProp(propKey)) {
         const eventCallback = propValue as EventListener;
         const eventName = eventNameToEventListenerName(propKey);
+
         dom.addEventListener(eventName, eventCallback);
-        eventStore.set(dom, new Map([[eventName, eventCallback]]));
+
+        const map = getEventMap(dom);
+        map.set(eventName, eventCallback);
+
         return;
       }
 
@@ -77,31 +82,33 @@ function convertVNodetoDOM(vnode: VNode): Node {
   throw new Error("⛔ Unknown VNode type");
 }
 
-function replaceVNode(parentDom: Node, prevVNode: VNode, nextVNode: VNode) {
-  const dom = convertVNodetoDOM(nextVNode);
-  if (prevVNode.dom === null) throw new Error("⛔ DOM node is not mounted");
-  parentDom.replaceChild(dom, prevVNode.dom);
-}
-
-function updateDom(
+function setCommitOperations(
   parentDom: Node,
   prevVNode: VNode | undefined,
   nextVNode: VNode | undefined,
+  commitOperations: Operation[],
 ) {
   // 0) both missing
   if (!prevVNode && !nextVNode) return;
 
   // 1) mount
   if (!prevVNode && nextVNode) {
-    const dom = convertVNodetoDOM(nextVNode);
-    parentDom.appendChild(dom);
+    commitOperations.push({
+      type: "CREATE",
+      parentDom: parentDom,
+      vnode: nextVNode,
+    });
     return;
   }
 
   // 2) unmount
   if (prevVNode && !nextVNode) {
     if (prevVNode.dom === null) throw new Error("⛔ DOM node is not mounted");
-    parentDom.removeChild(prevVNode.dom);
+    commitOperations.push({
+      type: "REMOVE",
+      parentDom: parentDom,
+      dom: prevVNode.dom,
+    });
     return;
   }
 
@@ -115,28 +122,49 @@ function updateDom(
 
   // один FC другой нет -> replace
   if (prevIsFC !== nextIsFC) {
-    replaceVNode(parentDom, prevVNode, nextVNode);
+    if (prevVNode.dom === null) throw new Error("⛔ DOM node is not mounted");
+
+    commitOperations.push({
+      type: "REPLACE",
+      parentDom: parentDom,
+      oldDom: prevVNode.dom,
+      vnode: nextVNode,
+    });
     return;
   }
 
   // оба FC
   if (prevIsFC && nextIsFC) {
     // другой компонент -> replace
+
     if (prevVNode.component !== nextVNode.component) {
-      replaceVNode(parentDom, prevVNode, nextVNode);
+      if (prevVNode.dom === null) throw new Error("⛔ DOM node is not mounted");
+
+      commitOperations.push({
+        type: "REPLACE",
+        parentDom: parentDom,
+        oldDom: prevVNode.dom,
+        vnode: nextVNode,
+      });
       return;
     }
 
     // dom остаётся тем же
     nextVNode.dom = prevVNode.dom;
 
-    // prev child БЕРЁМ, НЕ выполняем prev component заново
-    const prevChild = prevVNode.componentResult;
+    // prev componentResult БЕРЁМ, НЕ выполняем prev component заново
+    const prevComponentResult = prevVNode.componentResult;
 
-    // next child выполняем
-    const nextChild = runComponent(nextVNode);
+    // next ComponentResult выполняем
+    const nextComponentResult = runComponent(nextVNode);
 
-    updateDom(parentDom, prevChild ?? undefined, nextChild);
+    if (prevVNode.dom === null) throw new Error("⛔ DOM node is not mounted");
+    setCommitOperations(
+      prevVNode.dom,
+      prevComponentResult ?? undefined,
+      nextComponentResult,
+      commitOperations,
+    );
     return;
   }
 
@@ -148,7 +176,11 @@ function updateDom(
     if (prevVNode.dom === null) throw new Error("⛔ DOM node is not mounted");
 
     if (prevVNode.props.nodeValue !== nextVNode.props.nodeValue) {
-      prevVNode.dom.nodeValue = nextVNode.props.nodeValue;
+      commitOperations.push({
+        type: "SET_TEXT",
+        dom: prevVNode.dom as Text,
+        value: nextVNode.props.nodeValue,
+      });
     }
     return;
   }
@@ -159,14 +191,24 @@ function updateDom(
   if (isHTMLElementVNode(prevVNode) && isHTMLElementVNode(nextVNode)) {
     // разные теги -> replace
     if (prevVNode.tagName !== nextVNode.tagName) {
-      replaceVNode(parentDom, prevVNode, nextVNode);
+      commitOperations.push({
+        type: "REPLACE",
+        parentDom: parentDom,
+        oldDom: prevVNode.dom!,
+        vnode: nextVNode,
+      });
       return;
     }
 
     nextVNode.dom = prevVNode.dom;
     if (prevVNode.dom === null) throw new Error("⛔ DOM node is not mounted");
 
-    updateDomByProps(prevVNode.dom, prevVNode.props, nextVNode.props);
+    setPropsCommitOperations(
+      prevVNode.dom,
+      prevVNode.props,
+      nextVNode.props,
+      commitOperations,
+    );
 
     const maxChildrenLength = Math.max(
       prevVNode.children.length,
@@ -174,7 +216,12 @@ function updateDom(
     );
 
     for (let i = 0; i < maxChildrenLength; i++) {
-      updateDom(prevVNode.dom, prevVNode.children[i], nextVNode.children[i]);
+      setCommitOperations(
+        prevVNode.dom,
+        prevVNode.children[i],
+        nextVNode.children[i],
+        commitOperations,
+      );
     }
 
     return;
@@ -183,7 +230,13 @@ function updateDom(
   // =========================
   // 6) fallback
   // =========================
-  replaceVNode(parentDom, prevVNode, nextVNode);
+  if (prevVNode.dom === null) throw new Error("⛔ DOM node is not mounted");
+  commitOperations.push({
+    type: "REPLACE",
+    parentDom: parentDom,
+    oldDom: prevVNode.dom,
+    vnode: nextVNode,
+  });
 }
 
 function getEventMap(dom: Element) {
@@ -195,52 +248,91 @@ function getEventMap(dom: Element) {
   return map;
 }
 
-function updateDomByProps(
+function setPropsCommitOperations(
   dom: Element,
   prevProps: ElementProps,
   nextProps: ElementProps,
+  commitOperations: Operation[],
 ) {
-  // Remove deleted props
   Object.keys(prevProps).forEach((key) => {
     if (!(key in nextProps)) {
-      if (isEventProp(key)) {
-        const eventName = eventNameToEventListenerName(key);
-        const map = getEventMap(dom);
-        const eventListener = map.get(eventName);
-        if (eventListener) {
-          dom.removeEventListener(eventName, eventListener);
-          map.delete(eventName);
-        }
-        return;
-      }
-      dom.removeAttribute(key);
+      commitOperations.push({
+        type: "REMOVE_PROP",
+        dom,
+        key,
+      });
     }
   });
 
-  // Update or set new props
   Object.entries(nextProps).forEach(([key, value]) => {
-    if (prevProps[key] === value) {
-      return;
+    if (prevProps[key] !== value) {
+      commitOperations.push({
+        type: "SET_PROP",
+        dom,
+        key,
+        value,
+      });
     }
-
-    if (isEventProp(key)) {
-      const eventName = eventNameToEventListenerName(key);
-      const eventListener = value as EventListener;
-      const prevEventListener = getEventMap(dom).get(eventName);
-
-      if (prevEventListener) {
-        const map = getEventMap(dom);
-        dom.removeEventListener(eventName, prevEventListener);
-        map.delete(eventName);
-      }
-
-      dom.addEventListener(eventName, eventListener);
-      getEventMap(dom).set(eventName, eventListener);
-      return;
-    }
-
-    dom.setAttribute(key, String(value));
   });
+}
+
+function applyCommitOperations(operations: Operation[]) {
+  for (const operation of operations) {
+    switch (operation.type) {
+      case "CREATE": {
+        const dom = convertVNodetoDOM(operation.vnode);
+        operation.parentDom.appendChild(dom);
+        break;
+      }
+      case "REMOVE": {
+        operation.parentDom.removeChild(operation.dom);
+        break;
+      }
+      case "REPLACE": {
+        const newDom = convertVNodetoDOM(operation.vnode);
+        operation.parentDom.replaceChild(newDom, operation.oldDom);
+        break;
+      }
+      case "SET_TEXT": {
+        operation.dom.nodeValue = operation.value;
+        break;
+      }
+      case "SET_PROP": {
+        if (isEventProp(operation.key)) {
+          const eventName = eventNameToEventListenerName(operation.key);
+          const eventMap = getEventMap(operation.dom);
+          const prevListener = eventMap.get(eventName);
+
+          if (prevListener) {
+            operation.dom.removeEventListener(eventName, prevListener);
+          }
+
+          operation.dom.addEventListener(eventName, operation.value);
+          eventMap.set(eventName, operation.value);
+        } else {
+          operation.dom.setAttribute(operation.key, String(operation.value));
+        }
+
+        break;
+      }
+      case "REMOVE_PROP": {
+        if (isEventProp(operation.key)) {
+          const eventName = eventNameToEventListenerName(operation.key);
+          const map = getEventMap(operation.dom);
+
+          const listener = map.get(eventName);
+          if (listener) {
+            operation.dom.removeEventListener(eventName, listener);
+            map.delete(eventName);
+          }
+        } else {
+          operation.dom.removeAttribute(operation.key);
+        }
+
+        break;
+      }
+    }
+  }
 }
 
 // ===== public API =====
@@ -264,7 +356,9 @@ export function render(
     container.appendChild(dom);
   } else {
     // update
-    updateDom(container, prevVDom, newVDOM);
+    const commitOperations: Operation[] = [];
+    setCommitOperations(container, prevVDom, newVDOM, commitOperations);
+    applyCommitOperations(commitOperations);
   }
 
   prevVDom = newVDOM;
