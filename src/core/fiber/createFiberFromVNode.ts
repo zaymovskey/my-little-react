@@ -9,7 +9,6 @@ export function createFiberFromVNode(vnode: VNode): Fiber {
       parent: null,
       child: null,
       sibling: null,
-      alternate: null,
       stateNode: null,
     };
   }
@@ -21,7 +20,6 @@ export function createFiberFromVNode(vnode: VNode): Fiber {
       parent: null,
       child: null,
       sibling: null,
-      alternate: null,
       stateNode: null,
     };
   }
@@ -32,7 +30,6 @@ export function createFiberFromVNode(vnode: VNode): Fiber {
     parent: null,
     child: null,
     sibling: null,
-    alternate: null,
     stateNode: null,
     hooks: [],
   };

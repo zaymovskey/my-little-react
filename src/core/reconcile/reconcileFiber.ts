@@ -14,7 +14,6 @@ export function reconcileFiber(
 ): Fiber {
   const newFiber = createFiberFromVNode(newVNode);
   newFiber.parent = parentFiber;
-  newFiber.alternate = oldFiber;
 
   // 1. Mount
   if (oldFiber === null) {

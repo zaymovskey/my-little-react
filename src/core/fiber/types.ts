@@ -5,7 +5,6 @@ type FiberBase = {
   parent: Fiber | null;
   child: Fiber | null;
   sibling: Fiber | null;
-  alternate: Fiber | null;
   stateNode: Node | null;
 };
 
