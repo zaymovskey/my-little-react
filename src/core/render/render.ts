@@ -21,14 +21,6 @@ export function render(vnode: VNode, container: Node): void {
   currentContainer = container;
 }
 
-export function getCurrentContainer(): Node | null {
-  return currentContainer;
-}
-
-export function getCurrentRoot(): Fiber | null {
-  return currentRoot;
-}
-
 export function rerender(): void {
   if (lastVnode && currentContainer) {
     render(lastVnode, currentContainer);
