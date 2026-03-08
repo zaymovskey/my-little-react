@@ -7,7 +7,11 @@ import type { VNode } from "../vdom/types";
 let currentRoot: Fiber | null = null;
 let currentContainer: Node | null = null;
 
+let lastVnode: VNode | null = null;
+
 export function render(vnode: VNode, container: Node): void {
+  lastVnode = vnode;
+
   const ops: CommitOp[] = [];
   const newRoot = reconcileFiber(currentRoot, vnode, null, ops);
 
@@ -23,4 +27,13 @@ export function getCurrentContainer(): Node | null {
 
 export function getCurrentRoot(): Fiber | null {
   return currentRoot;
+}
+
+export function rerender(): void {
+  if (lastVnode && currentContainer) {
+    render(lastVnode, currentContainer);
+    return;
+  }
+
+  throw new Error("🛑 No previous render found to rerender");
 }

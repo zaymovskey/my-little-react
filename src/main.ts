@@ -1,37 +1,108 @@
-import { render, getCurrentContainer } from "./core/render/render";
+import { useState } from "./core/hooks/useState";
+import { render } from "./core/render/render";
 import { createElement } from "./core/vdom/createElement";
-import type { VNode } from "./core/vdom/types";
-
-function Title(props: { children: VNode[] }) {
-  return createElement("h1", null, ...props.children);
-}
 
 function App() {
+  const [count1, setCount1] = useState(0);
+  const [count2, setCount2] = useState(10);
+
   return createElement(
     "div",
-    { className: "app" },
-    createElement(Title, null, "Hello"),
+    {},
     createElement(
-      "button",
-      {
-        onClick: () => {
-          const container = getCurrentContainer();
-          if (!container) {
-            throw new Error("No current container");
-          }
+      "div",
+      {},
+      createElement(
+        "div",
+        {},
+        createElement(
+          "button",
+          {
+            onClick: () => {
+              setCount1(count1 - 1);
+              setCount1(count1 - 1);
+            },
+          },
+          "-2",
+        ),
+        createElement(
+          "button",
+          {
+            onClick: () => {
+              setCount1(count1 - 1);
+            },
+          },
+          "-",
+        ),
+        createElement("span", {}, `Count: ${count1}`),
+        createElement(
+          "button",
+          {
+            onClick: () => {
+              setCount1(count1 + 1);
+            },
+          },
+          "+",
+        ),
+        createElement(
+          "button",
+          {
+            onClick: () => {
+              setCount1(count1 + 1);
+              setCount1(count1 + 1);
+            },
+          },
+          "+2",
+        ),
+      ),
+    ),
 
-          render(
-            createElement(
-              "div",
-              { className: "app updated" },
-              createElement(Title, null, "Hello updated"),
-              createElement("span", null, "Rerender worked"),
-            ),
-            container,
-          );
-        },
-      },
-      "Update",
+    createElement(
+      "div",
+      {},
+      createElement(
+        "div",
+        {},
+        createElement(
+          "button",
+          {
+            onClick: () => {
+              setCount2((prev) => prev - 1);
+              setCount2((prev) => prev - 1);
+            },
+          },
+          "-2",
+        ),
+        createElement(
+          "button",
+          {
+            onClick: () => {
+              setCount2((prev) => prev - 1);
+            },
+          },
+          "-",
+        ),
+        createElement("span", {}, `Count: ${count2}`),
+        createElement(
+          "button",
+          {
+            onClick: () => {
+              setCount2((prev) => prev + 1);
+            },
+          },
+          "+",
+        ),
+        createElement(
+          "button",
+          {
+            onClick: () => {
+              setCount2((prev) => prev + 1);
+              setCount2((prev) => prev + 1);
+            },
+          },
+          "+2",
+        ),
+      ),
     ),
   );
 }

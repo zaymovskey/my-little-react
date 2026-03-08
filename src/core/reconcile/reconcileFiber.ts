@@ -4,6 +4,7 @@ import type { VNode } from "../vdom/types";
 import type { CommitOp } from "./types";
 import { collectRemovals } from "./helpers";
 import { reconcileChildren } from "./childrenReconcile";
+import { resetCurrentFiber, setCurrentFiber } from "../hooks/useState";
 
 export function reconcileFiber(
   oldFiber: Fiber | null,
@@ -82,11 +83,14 @@ export function reconcileFiber(
       return newFiber;
     }
 
-    // hooks потом будут переноситься здесь:
-    // newFiber.hooks = oldFiber.hooks;
+    newFiber.hooks = oldFiber.hooks;
+    setCurrentFiber(newFiber);
 
     const rendered = newFiber.vnode.component(newFiber.vnode.props);
     reconcileChildren(oldFiber, newFiber, [rendered], ops);
+
+    resetCurrentFiber();
+
     return newFiber;
   }
 
@@ -108,8 +112,10 @@ function mountFiber(fiber: Fiber, ops: CommitOp[]): void {
   }
 
   if (fiber.kind === "fc") {
+    setCurrentFiber(fiber);
     const rendered = fiber.vnode.component(fiber.vnode.props);
     reconcileChildren(null, fiber, [rendered], ops);
+    resetCurrentFiber();
     return;
   }
 }
