@@ -1,4 +1,4 @@
-import type { StateHook } from "../hooks/types";
+import type { EffectHook, StateHook } from "../hooks/types";
 import type { FCVNode, HostVNode, TextVNode } from "../vdom/types";
 
 type FiberBase = {
@@ -24,7 +24,7 @@ export type FCFiber = FiberBase & {
   kind: "fc";
   vnode: FCVNode;
   stateNode: null;
-  hooks: StateHook<unknown>[];
+  hooks: (StateHook<unknown> | EffectHook)[];
 };
 
 export type Fiber = HostFiber | TextFiber | FCFiber;

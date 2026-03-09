@@ -4,7 +4,7 @@ import type { VNode } from "../vdom/types";
 import type { CommitOp } from "./types";
 import { collectRemovals } from "./helpers";
 import { reconcileChildren } from "./childrenReconcile";
-import { resetCurrentFiber, setCurrentFiber } from "../hooks/useState";
+import { resetCurrentFiber, setCurrentFiber } from "../hooks/currentFiber";
 
 export function reconcileFiber(
   oldFiber: Fiber | null,

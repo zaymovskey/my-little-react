@@ -1,9 +1,10 @@
-import type { FCFiber } from "../fiber/types";
 import { rerender } from "../render/render";
 import type { StateHook } from "./types";
-
-let currentFiber: FCFiber | null = null;
-let currentHookIndex = 0;
+import {
+  currentFiber,
+  currentHookIndex,
+  incrementHookIndex,
+} from "./currentFiber";
 
 // TODO: сделать батчинг обновлений, чтобы при нескольких
 // вызовах setState в одном обработчике событий не было лишних перерисовок
@@ -29,7 +30,7 @@ export function useState<T>(
 
   const hook = fiber.hooks[hookIndex] as StateHook<T>;
 
-  currentHookIndex++;
+  incrementHookIndex();
 
   return [
     hook.state,
@@ -44,14 +45,4 @@ export function useState<T>(
       rerender();
     },
   ];
-}
-
-export function setCurrentFiber(fiber: FCFiber | null): void {
-  currentFiber = fiber;
-  currentHookIndex = 0;
-}
-
-export function resetCurrentFiber(): void {
-  currentFiber = null;
-  currentHookIndex = 0;
 }
