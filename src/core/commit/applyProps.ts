@@ -15,6 +15,13 @@ export function applyProps(
         if (typeof prevHandler === "function") {
           node.removeEventListener(eventName, prevHandler as EventListener);
         }
+      } else if (prevKey === "style") {
+        const prevStyle = prev[prevKey] as Record<string, string> | undefined;
+        if (prevStyle) {
+          for (const styleName in prevStyle) {
+            (node.style as any)[styleName] = "";
+          }
+        }
       } else {
         const attr = normalizeAttrName(prevKey);
         node.removeAttribute(attr);
@@ -38,6 +45,21 @@ export function applyProps(
 
         if (typeof nextHandler === "function") {
           node.addEventListener(eventName, nextHandler as EventListener);
+        }
+      } else if (nextKey === "style") {
+        const prevStyle = (prev[nextKey] as Record<string, string>) ?? {};
+        const nextStyle = (next[nextKey] as Record<string, string>) ?? {};
+
+        // удалить старые стили, которых больше нет
+        for (const styleName in prevStyle) {
+          if (!(styleName in nextStyle)) {
+            (node.style as any)[styleName] = "";
+          }
+        }
+
+        // применить новые
+        for (const styleName in nextStyle) {
+          (node.style as any)[styleName] = nextStyle[styleName];
         }
       } else {
         const attr = normalizeAttrName(nextKey);
