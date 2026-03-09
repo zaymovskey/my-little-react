@@ -20,24 +20,22 @@ export function useEffect(
   const fiber = currentFiber;
   const hookIndex = currentHookIndex;
 
-  const prevHook = fiber.hooks[hookIndex] as EffectHook;
+  const prevHook = fiber.alternate?.hooks[hookIndex] as EffectHook | undefined;
 
-  if (!prevHook) {
-    // Первый рендер: просто добавляем эффект в очередь
-    effectsQueue.push({
-      hook: { type: "effect", effect, deps },
-    });
-    incrementHookIndex();
-    return;
-  }
+  const newHook: EffectHook = {
+    type: "effect",
+    effect,
+    deps,
+    cleanup: prevHook?.cleanup,
+  };
 
-  // Рендер после первого: сравниваем deps
-  const hasChanged =
-    !deps || !prevHook.deps || deps.some((dep, i) => dep !== prevHook.deps![i]);
+  fiber.hooks[hookIndex] = newHook;
+
+  const hasChanged = shouldRunEffect(prevHook, deps);
 
   if (hasChanged) {
     effectsQueue.push({
-      hook: { type: "effect", effect, deps },
+      hook: newHook,
       prevHook,
     });
   }
@@ -47,14 +45,54 @@ export function useEffect(
 
 export function runEffects(): void {
   while (effectsQueue.length > 0) {
-    const effect = effectsQueue.shift();
-    if (effect) {
-      effect.prevHook?.cleanup?.();
+    const pendingEffect = effectsQueue.shift();
 
-      const cleanUp = effect.hook.effect();
-      if (typeof cleanUp === "function") {
-        effect.hook.cleanup = cleanUp;
-      }
+    if (!pendingEffect) continue;
+
+    pendingEffect.prevHook?.cleanup?.();
+
+    const cleanup = pendingEffect.hook.effect();
+
+    if (typeof cleanup === "function") {
+      pendingEffect.hook.cleanup = cleanup;
+    } else {
+      pendingEffect.hook.cleanup = undefined;
     }
   }
+}
+
+function shouldRunEffect(
+  prevHook: EffectHook | undefined,
+  deps?: EffectHook["deps"],
+): boolean {
+  if (!prevHook) {
+    // Нет предыдущего эффекта, значит это первый рендер, эффект должен выполниться
+    return true;
+  }
+
+  if (deps === undefined) {
+    // Если deps не переданы, эффект должен выполняться после каждого рендера
+    return true;
+  }
+
+  const prevDeps = prevHook.deps;
+
+  if (prevDeps === undefined) {
+    // Если в предыдущем эффекте не было deps, а сейчас они есть, считаем, что deps изменились и эффект должен выполниться
+    return true;
+  }
+
+  if (deps.length !== prevDeps.length) {
+    // Если длина массивов deps изменилась, считаем, что deps изменились и эффект должен выполниться
+    return true;
+  }
+
+  for (let i = 0; i < deps.length; i++) {
+    // Если хотя бы один элемент в deps отличается от соответствующего элемента в prevDeps, эффект должен выполниться
+    if (!Object.is(deps[i], prevDeps[i])) {
+      return true;
+    }
+  }
+
+  return false;
 }

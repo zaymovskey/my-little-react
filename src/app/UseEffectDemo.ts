@@ -6,15 +6,29 @@ export function UseEffectDemo() {
   const [count, setCount] = useState(0);
   const [rerenders, setRerenders] = useState(0);
   const [mountOnlyRuns, setMountOnlyRuns] = useState(0);
+  const [countEffectRuns, setCountEffectRuns] = useState(0);
 
-  // useEffect(() => {
-  //   console.log("useEffect fired after every commit", { count, rerenders });
-  // });
+  useEffect(() => {
+    console.log("useEffect срабатывает при каждом рендере", {
+      count,
+      rerenders,
+    });
+  });
 
-  // useEffect(() => {
-  //   console.log("useEffect with [] fired once on mount");
-  //   setMountOnlyRuns((prev) => prev + 1);
-  // }, []);
+  useEffect(() => {
+    console.log(
+      "useEffect с [] срабатывает только при первом mount компонента",
+    );
+    setMountOnlyRuns((prev) => prev + 1);
+  }, []);
+
+  useEffect(() => {
+    console.log(
+      "useEffect с deps [count] срабатывает только когда меняется count",
+    );
+
+    setCountEffectRuns((prev) => prev + 1);
+  }, [count]);
 
   const pageStyle = {
     display: "flex",
@@ -71,8 +85,13 @@ export function UseEffectDemo() {
     "div",
     { style: pageStyle },
 
-    createElement("h1", {}, "Демонстрация работы useEffect"),
+    createElement(
+      "h1",
+      { style: { fontSize: "30px", marginTop: "20px", textAlign: "center" } },
+      "Демонстрация работы useEffect",
+    ),
 
+    // ---------- БЕЗ DEPS ----------
     createElement(
       "section",
       { style: cardStyle },
@@ -116,6 +135,7 @@ export function UseEffectDemo() {
       ),
     ),
 
+    // ---------- [] ----------
     createElement(
       "section",
       { style: cardStyle },
@@ -135,7 +155,36 @@ export function UseEffectDemo() {
       createElement(
         "p",
         { style: noteStyle },
-        "Этот effect должен выполниться только один раз при первом mount компонента.",
+        "Этот effect выполняется только один раз при первом mount компонента.",
+      ),
+    ),
+
+    // ---------- [count] ----------
+    createElement(
+      "section",
+      { style: cardStyle },
+
+      createElement(
+        "h2",
+        { style: cardTitleStyle },
+        "useEffect с deps [count]",
+      ),
+
+      createElement(
+        "div",
+        { style: rowStyle },
+        createElement("span", { style: valueStyle }, `Count: ${count}`),
+        createElement(
+          "span",
+          { style: valueStyle },
+          `Effect runs: ${countEffectRuns}`,
+        ),
+      ),
+
+      createElement(
+        "p",
+        { style: noteStyle },
+        "Этот effect запускается только когда меняется count.",
       ),
     ),
   );
