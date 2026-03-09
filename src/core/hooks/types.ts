@@ -6,4 +6,6 @@ export interface StateHook<T> {
 export interface EffectHook {
   type: "effect";
   effect: () => void;
+  deps?: unknown[];
+  hasRun?: boolean;
 }

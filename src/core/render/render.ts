@@ -18,10 +18,10 @@ export function render(vnode: VNode, container: Node): void {
 
   applyCommit(ops, container);
 
-  runEffects();
-
   currentRoot = newRoot;
   currentContainer = container;
+
+  runEffects();
 }
 
 export function rerender(): void {

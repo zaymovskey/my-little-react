@@ -7,7 +7,10 @@ import type { EffectHook } from "./types";
 
 const effectsQueue: EffectHook["effect"][] = [];
 
-export function useEffect(effect: EffectHook["effect"]): void {
+export function useEffect(
+  effect: EffectHook["effect"],
+  deps?: EffectHook["deps"],
+): void {
   if (currentFiber === null) {
     throw new Error(
       "🛑 useEffect can only be called inside a function component",
@@ -21,14 +24,23 @@ export function useEffect(effect: EffectHook["effect"]): void {
     fiber.hooks[hookIndex] = {
       type: "effect",
       effect,
+      deps,
     };
   } else {
     (fiber.hooks[hookIndex] as EffectHook).effect = effect;
+    (fiber.hooks[hookIndex] as EffectHook).deps = deps;
   }
 
   const hook = fiber.hooks[hookIndex] as EffectHook;
 
-  effectsQueue.push(hook.effect);
+  if (deps === undefined) {
+    effectsQueue.push(hook.effect);
+  } else if (deps.length === 0) {
+    if (hook.hasRun !== true) {
+      effectsQueue.push(hook.effect);
+      hook.hasRun = true;
+    }
+  }
 
   incrementHookIndex();
 }

@@ -5,16 +5,35 @@ import { createElement } from "../core/vdom/createElement";
 export function UseEffectDemo() {
   const [count, setCount] = useState(0);
   const [rerenders, setRerenders] = useState(0);
+  const [mountOnlyRuns, setMountOnlyRuns] = useState(0);
 
   useEffect(() => {
-    console.log("useEffect fired after commit", { count, rerenders });
+    console.log("useEffect fired after every commit", { count, rerenders });
   });
+
+  useEffect(() => {
+    console.log("useEffect with [] fired once on mount");
+    setMountOnlyRuns((prev) => prev + 1);
+  }, []);
+
+  const pageStyle = {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: "20px",
+  };
 
   const cardStyle = {
     border: "1px solid #27272a",
     borderRadius: "18px",
     padding: "24px",
     background: "linear-gradient(180deg, #18181b 0%, #111113 100%)",
+  };
+
+  const cardTitleStyle = {
+    fontSize: "20px",
+    fontWeight: "700",
+    color: "#f8fafc",
+    marginBottom: "16px",
   };
 
   const rowStyle = {
@@ -34,6 +53,7 @@ export function UseEffectDemo() {
     fontWeight: "700",
     cursor: "pointer",
   };
+
   const valueStyle = {
     fontSize: "18px",
     fontWeight: "700",
@@ -49,17 +69,15 @@ export function UseEffectDemo() {
 
   return createElement(
     "div",
-    {},
+    { style: pageStyle },
 
-    createElement(
-      "h1",
-      { style: { fontSize: "30px", margin: "20px auto" } },
-      "Демонстрация работы useEffect",
-    ),
+    createElement("h1", {}, "Демонстрация работы useEffect"),
 
     createElement(
       "section",
       { style: cardStyle },
+
+      createElement("h2", { style: cardTitleStyle }, "useEffect без deps"),
 
       createElement(
         "div",
@@ -95,6 +113,29 @@ export function UseEffectDemo() {
         "p",
         { style: noteStyle },
         "Открой консоль: useEffect без deps срабатывает после каждого commit.",
+      ),
+    ),
+
+    createElement(
+      "section",
+      { style: cardStyle },
+
+      createElement("h2", { style: cardTitleStyle }, "useEffect с []"),
+
+      createElement(
+        "div",
+        { style: rowStyle },
+        createElement(
+          "span",
+          { style: valueStyle },
+          `Mount-only runs: ${mountOnlyRuns}`,
+        ),
+      ),
+
+      createElement(
+        "p",
+        { style: noteStyle },
+        "Этот effect должен выполниться только один раз при первом mount компонента.",
       ),
     ),
   );
