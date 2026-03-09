@@ -25,6 +25,7 @@ export type FCFiber = FiberBase & {
   vnode: FCVNode;
   stateNode: null;
   hooks: (StateHook<unknown> | EffectHook)[];
+  alternate: FCFiber | null;
 };
 
 export type Fiber = HostFiber | TextFiber | FCFiber;

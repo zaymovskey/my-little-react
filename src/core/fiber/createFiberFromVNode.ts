@@ -32,5 +32,6 @@ export function createFiberFromVNode(vnode: VNode): Fiber {
     sibling: null,
     stateNode: null,
     hooks: [],
+    alternate: null,
   };
 }

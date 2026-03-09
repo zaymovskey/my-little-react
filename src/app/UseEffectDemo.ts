@@ -7,14 +7,14 @@ export function UseEffectDemo() {
   const [rerenders, setRerenders] = useState(0);
   const [mountOnlyRuns, setMountOnlyRuns] = useState(0);
 
-  useEffect(() => {
-    console.log("useEffect fired after every commit", { count, rerenders });
-  });
+  // useEffect(() => {
+  //   console.log("useEffect fired after every commit", { count, rerenders });
+  // });
 
-  useEffect(() => {
-    console.log("useEffect with [] fired once on mount");
-    setMountOnlyRuns((prev) => prev + 1);
-  }, []);
+  // useEffect(() => {
+  //   console.log("useEffect with [] fired once on mount");
+  //   setMountOnlyRuns((prev) => prev + 1);
+  // }, []);
 
   const pageStyle = {
     display: "flex",

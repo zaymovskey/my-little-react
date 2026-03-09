@@ -82,7 +82,7 @@ export function reconcileFiber(
       return newFiber;
     }
 
-    newFiber.hooks = oldFiber.hooks;
+    newFiber.alternate = oldFiber;
     setCurrentFiber(newFiber);
 
     const rendered = newFiber.vnode.component(newFiber.vnode.props);

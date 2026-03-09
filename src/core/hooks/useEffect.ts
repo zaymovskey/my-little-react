@@ -3,9 +3,9 @@ import {
   currentHookIndex,
   incrementHookIndex,
 } from "./currentFiber";
-import type { EffectHook } from "./types";
+import type { EffectHook, PendingEffect } from "./types";
 
-const effectsQueue: EffectHook["effect"][] = [];
+const effectsQueue: PendingEffect[] = [];
 
 export function useEffect(
   effect: EffectHook["effect"],
@@ -20,26 +20,26 @@ export function useEffect(
   const fiber = currentFiber;
   const hookIndex = currentHookIndex;
 
-  if (!fiber.hooks[hookIndex]) {
-    fiber.hooks[hookIndex] = {
-      type: "effect",
-      effect,
-      deps,
-    };
-  } else {
-    (fiber.hooks[hookIndex] as EffectHook).effect = effect;
-    (fiber.hooks[hookIndex] as EffectHook).deps = deps;
+  const prevHook = fiber.hooks[hookIndex] as EffectHook;
+
+  if (!prevHook) {
+    // Первый рендер: просто добавляем эффект в очередь
+    effectsQueue.push({
+      hook: { type: "effect", effect, deps },
+    });
+    incrementHookIndex();
+    return;
   }
 
-  const hook = fiber.hooks[hookIndex] as EffectHook;
+  // Рендер после первого: сравниваем deps
+  const hasChanged =
+    !deps || !prevHook.deps || deps.some((dep, i) => dep !== prevHook.deps![i]);
 
-  if (deps === undefined) {
-    effectsQueue.push(hook.effect);
-  } else if (deps.length === 0) {
-    if (hook.hasRun !== true) {
-      effectsQueue.push(hook.effect);
-      hook.hasRun = true;
-    }
+  if (hasChanged) {
+    effectsQueue.push({
+      hook: { type: "effect", effect, deps },
+      prevHook,
+    });
   }
 
   incrementHookIndex();
@@ -49,10 +49,11 @@ export function runEffects(): void {
   while (effectsQueue.length > 0) {
     const effect = effectsQueue.shift();
     if (effect) {
-      try {
-        effect();
-      } catch (error) {
-        console.error("Error in useEffect:", error);
+      effect.prevHook?.cleanup?.();
+
+      const cleanUp = effect.hook.effect();
+      if (typeof cleanUp === "function") {
+        effect.hook.cleanup = cleanUp;
       }
     }
   }

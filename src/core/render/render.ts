@@ -10,6 +10,8 @@ let currentContainer: Node | null = null;
 
 let lastVnode: VNode | null = null;
 
+let renderScheduled = false;
+
 export function render(vnode: VNode, container: Node): void {
   lastVnode = vnode;
 
@@ -31,4 +33,15 @@ export function rerender(): void {
   }
 
   throw new Error("🛑 No previous render found to rerender");
+}
+
+export function scheduleRender() {
+  if (renderScheduled) return;
+
+  renderScheduled = true;
+
+  queueMicrotask(() => {
+    renderScheduled = false;
+    rerender();
+  });
 }

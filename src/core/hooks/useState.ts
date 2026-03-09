@@ -1,17 +1,14 @@
-import { rerender } from "../render/render";
-import type { StateHook } from "./types";
+import { scheduleRender } from "../render/render";
+import type { StateHook, StateUpdate } from "./types";
 import {
   currentFiber,
   currentHookIndex,
   incrementHookIndex,
 } from "./currentFiber";
 
-// TODO: сделать батчинг обновлений, чтобы при нескольких
-// вызовах setState в одном обработчике событий не было лишних перерисовок
-
 export function useState<T>(
   initialValue: T,
-): [T, (value: T | ((prev: T) => T)) => void] {
+): [T, (value: StateUpdate<T>) => void] {
   if (currentFiber === null) {
     throw new Error(
       "🛑 useState can only be called inside a function component",
@@ -21,28 +18,38 @@ export function useState<T>(
   const fiber = currentFiber;
   const hookIndex = currentHookIndex;
 
-  if (!fiber.hooks[hookIndex]) {
-    fiber.hooks[hookIndex] = {
-      type: "state",
-      state: initialValue,
-    };
+  const prevHook = fiber.alternate?.hooks[hookIndex] as
+    | StateHook<T>
+    | undefined;
+
+  const queue = prevHook ? prevHook.queue : [];
+  let state = prevHook ? prevHook.state : initialValue;
+
+  for (const update of queue) {
+    if (typeof update === "function") {
+      state = (update as (prev: T) => T)(state);
+    } else {
+      state = update;
+    }
   }
 
-  const hook = fiber.hooks[hookIndex] as StateHook<T>;
+  queue.length = 0;
+
+  const newHook: StateHook<T> = {
+    type: "state",
+    state,
+    queue,
+  };
+
+  fiber.hooks[hookIndex] = newHook;
 
   incrementHookIndex();
 
   return [
-    hook.state,
-    (newValue: T | ((prev: T) => T)) => {
-      if (typeof newValue === "function") {
-        const updater = newValue as (prev: T) => T;
-        hook.state = updater(hook.state as T);
-      } else {
-        hook.state = newValue;
-      }
-
-      rerender();
+    newHook.state,
+    (value: StateUpdate<T>) => {
+      queue.push(value);
+      scheduleRender();
     },
   ];
 }
