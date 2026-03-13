@@ -1,4 +1,9 @@
-import type { Fiber, HostFiber, HostOrTextFiber } from "../fiber/types";
+import type {
+  FCFiber,
+  Fiber,
+  HostFiber,
+  HostOrTextFiber,
+} from "../fiber/types";
 
 export type CommitOp =
   | {
@@ -20,7 +25,8 @@ export type CommitOp =
       node: HTMLElement;
       prev: Record<string, unknown>;
       next: Record<string, unknown>;
-    };
+    }
+  | { type: "cleanup"; fiber: FCFiber };
 
 export type KeyedOldChild = {
   fiber: Fiber;

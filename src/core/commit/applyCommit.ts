@@ -1,3 +1,4 @@
+import { runUnmountCleanups } from "../reconcile/helpers";
 import type { CommitOp } from "../reconcile/types";
 import { applyProps } from "./applyProps";
 
@@ -40,6 +41,11 @@ export function applyCommit(ops: CommitOp[], container: Node): void {
 
       case "updateProps": {
         applyProps(op.node, op.prev, op.next);
+        break;
+      }
+
+      case "cleanup": {
+        runUnmountCleanups(op.fiber);
         break;
       }
     }

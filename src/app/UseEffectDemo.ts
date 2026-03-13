@@ -1,12 +1,15 @@
 import { useEffect } from "../core/hooks/useEffect";
 import { useState } from "../core/hooks/useState";
 import { createElement } from "../core/vdom/createElement";
+import { UnmountCleanupDemo } from "./UnmountCleanupDemo";
 
 export function UseEffectDemo() {
   const [count, setCount] = useState(0);
   const [rerenders, setRerenders] = useState(0);
   const [mountOnlyRuns, setMountOnlyRuns] = useState(0);
   const [countEffectRuns, setCountEffectRuns] = useState(0);
+
+  const [showUnmountDemo, setShowUnmountDemo] = useState(true);
 
   useEffect(() => {
     console.log("useEffect срабатывает при каждом рендере", {
@@ -186,6 +189,35 @@ export function UseEffectDemo() {
         { style: noteStyle },
         "Этот effect запускается только когда меняется count.",
       ),
+    ),
+    // ---------- unmount cleanup ----------
+    createElement(
+      "section",
+      { style: cardStyle },
+
+      createElement("h2", { style: cardTitleStyle }, "Cleanup при unmount"),
+
+      createElement(
+        "div",
+        { style: rowStyle },
+
+        createElement(
+          "button",
+          {
+            style: buttonStyle,
+            onClick: () => setShowUnmountDemo((prev) => !prev),
+          },
+          showUnmountDemo ? "Unmount component" : "Mount component",
+        ),
+      ),
+
+      showUnmountDemo
+        ? createElement(UnmountCleanupDemo, null)
+        : createElement(
+            "p",
+            { style: noteStyle },
+            "Компонент размонтирован. Открой консоль: cleanup уже должен был выполниться.",
+          ),
     ),
   );
 }

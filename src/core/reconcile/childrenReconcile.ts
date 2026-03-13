@@ -29,6 +29,7 @@ export function reconcileChildren(
   const result: Fiber[] = [];
 
   if (!someKeyed) {
+    // reconcile по индексу
     const maxLen = Math.max(oldChildren.length, newChildrenVNodes.length);
 
     for (let i = 0; i < maxLen; i++) {
@@ -50,6 +51,7 @@ export function reconcileChildren(
     return;
   }
 
+  // reconcile по ключу
   const oldKeyToChild = new Map<string | number, KeyedOldChild>();
 
   oldChildren.forEach((child, index) => {

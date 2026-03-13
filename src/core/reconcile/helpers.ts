@@ -1,7 +1,8 @@
-import type { Fiber } from "../fiber/types";
+import type { FCFiber, Fiber } from "../fiber/types";
 import type { VNode } from "../vdom/types";
 import type { CommitOp } from "./types";
 import { findHostParentFiber } from "../fiber/helpers";
+import type { EffectHook } from "../hooks/types";
 
 export function isSameType(oldFiber: Fiber, newVNode: VNode): boolean {
   if (oldFiber.kind !== newVNode.kind) return false;
@@ -22,6 +23,10 @@ export function isSameType(oldFiber: Fiber, newVNode: VNode): boolean {
 }
 
 export function collectRemovals(fiber: Fiber, ops: CommitOp[]): void {
+  if (fiber.kind === "fc") {
+    ops.push({ type: "cleanup", fiber });
+  }
+
   if (fiber.kind === "host" || fiber.kind === "text") {
     if (fiber.stateNode) {
       ops.push({
@@ -33,10 +38,6 @@ export function collectRemovals(fiber: Fiber, ops: CommitOp[]): void {
 
   if (fiber.child) {
     collectRemovals(fiber.child, ops);
-  }
-
-  if (fiber.sibling) {
-    collectRemovals(fiber.sibling, ops);
   }
 }
 
@@ -55,5 +56,13 @@ export function collectPlacements(fiber: Fiber, ops: CommitOp[]): void {
 
   if (fiber.sibling) {
     collectPlacements(fiber.sibling, ops);
+  }
+}
+
+export function runUnmountCleanups(fiber: FCFiber): void {
+  for (const hook of fiber.hooks) {
+    if ((hook as EffectHook | undefined)?.type === "effect") {
+      (hook as EffectHook).cleanup?.();
+    }
   }
 }
