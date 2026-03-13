@@ -25,6 +25,7 @@ export function useState<T>(
   const queue = prevHook ? prevHook.queue : [];
   let state = prevHook ? prevHook.state : initialValue;
 
+  // state вычисляется в начале render-фазы компонента, перед тем как будет вычислена разметка.
   for (const update of queue) {
     if (typeof update === "function") {
       state = (update as (prev: T) => T)(state);
