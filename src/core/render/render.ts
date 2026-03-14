@@ -20,10 +20,12 @@ export function render(vnode: VNode, container: Node): void {
 
   applyCommit(ops, container);
 
+  // Здесь выполняются useLayoutEffect колбэки. До браузерного рендер пайплайна.
+
   currentRoot = newRoot;
   currentContainer = container;
 
-  runEffects();
+  schedulePassiveEffects();
 }
 
 export function rerender(): void {
@@ -44,4 +46,15 @@ export function scheduleRender() {
     renderScheduled = false;
     rerender();
   });
+}
+
+function schedulePassiveEffects() {
+  // Эффекты в реакте выполняются после браузерного рендер пайплайна.
+  // Мы говори: не запускай runEffects() прямо сейчас.
+  // Поставь его в очередь и выполни позже, когда текущий код уже полностью закончится.
+  // Это нужно в том числе для того, чтобы ускорить отрисовку, перекинув ее на следующий тик
+  // и не блокировать UI выполнением эффектов.
+  setTimeout(() => {
+    runEffects();
+  }, 0);
 }
