@@ -6,11 +6,7 @@
 
 ## 🔗 Демо
 
-👉 **Live demo:**
-
-```
-https://my-little-react.vercel.app/
-```
+[Ссылка на демо](https://my-little-react.vercel.app/)
 
 ---
 
